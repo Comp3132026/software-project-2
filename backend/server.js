@@ -13,7 +13,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/lifesync';
+const MONGODB_URI =
+  process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/lifesync';
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
