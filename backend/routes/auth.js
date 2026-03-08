@@ -5,6 +5,7 @@ const { auth, generateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Validation
 const validateRegister = [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
@@ -13,6 +14,7 @@ const validateRegister = [
 
 const validateLogin = [body('email').isEmail().normalizeEmail(), body('password').notEmpty()];
 
+// Register
 router.post('/register', validateRegister, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -30,12 +32,13 @@ router.post('/register', validateRegister, async (req, res) => {
     await user.save();
     const token = generateToken(user._id);
 
-    return res.status(201).json({ message: 'Registration successful', user, token });
+    res.status(201).json({ message: 'Registration successful', user, token });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// Login
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -55,18 +58,142 @@ router.post('/login', validateLogin, async (req, res) => {
     }
 
     const token = generateToken(user._id);
-    return res.json({ message: 'Login successful', user, token });
+    res.json({ message: 'Login successful', user, token });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// Get current user
 router.get('/me', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
-    return res.json(user);
+    const user = await User.findById(req.userId).populate('friends', 'name email');
+    res.json(user);
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update profile
+router.put('/me', auth, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { name, email },
+      { new: true, runValidators: true }
+    );
+
+    res.json({ message: 'Profile updated', user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get friends list (for GS2 - adding members from friends)
+router.get('/friends', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).populate('friends', 'name email');
+    res.json(user.friends);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Add friend
+router.post('/friends/:userId', auth, async (req, res) => {
+  try {
+    const friendId = req.params.userId;
+    //prevent adding myself
+    if (friendId === req.userId.toString()) {
+      return res.status(400).json({ message: 'Cannot add yourself as a friend.' });
+    }
+    //check if friend exists
+    const friend = await User.findById(friendId);
+    if (!friend) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    //add friend
+    const user = await User.findById(req.userId);
+    if (user.friends.includes(friendId)) {
+      return res.status(400).json({ message: 'Already friends.' });
+    }
+
+    // Add friend to user
+    await User.updateOne({ _id: req.userId }, { $addToSet: { friends: friendId } });
+
+    // Add user to friend (bi-directional)
+    await User.updateOne({ _id: friendId }, { $addToSet: { friends: req.userId } });
+
+    const updatedUser = await User.findById(req.userId).populate('friends', 'name email');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Friend added',
+      friends: updatedUser.friends,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+// Remove friend (bi-directional)
+router.delete('/friends/:userId', auth, async (req, res) => {
+  try {
+    const friendId = req.params.userId;
+
+    // Check if friend exists
+    const friend = await User.findById(friendId);
+    if (!friend) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Remove friend from user
+    await User.updateOne({ _id: req.userId }, { $pull: { friends: friendId } });
+
+    // Remove user from friend
+    await User.updateOne({ _id: friendId }, { $pull: { friends: req.userId } });
+
+    // Return updated list
+    const updatedUser = await User.findById(req.userId).populate('friends', 'name email');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Friend removed',
+      friends: updatedUser.friends,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+// Search users
+router.get('/search', auth, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+
+    const users = await User.find({
+      _id: { $ne: req.userId },
+      $or: [{ name: { $regex: q, $options: 'i' } }, { email: { $regex: q, $options: 'i' } }],
+    })
+      .select('name email')
+      .limit(10);
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
