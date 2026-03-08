@@ -10,8 +10,10 @@ const groupRoutes = require('./routes/groups');
 const taskRoutes = require('./routes/tasks');
 const memberRoutes = require('./routes/members');
 const chatRoutes = require('./routes/chat');
-const notificationRoutes = require('./routes/notifications');
-const aiRoutes = require('./routes/ai');
+const messageRoutes = require('./routes/messages');
+const dashboardRoutes = require('./routes/dashboard');
+const profileRoutes = require('./routes/profileRoutes');
+const warningRoutes = require('./routes/warnings');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,7 +24,6 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 app.set('io', io);
-app.use('/api/ai', aiRoutes);
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/lifesync';
 mongoose
@@ -35,7 +36,10 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/warnings', warningRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
