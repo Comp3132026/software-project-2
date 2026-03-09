@@ -14,7 +14,7 @@ export default function GroupForm({ group, onClose, onSuccess, isEditMode: _isEd
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // If isEditMode is true but no group, don't render (safeguard)
+  // If  isEditMode is true but no group, don't render  (safeguard)
 
   useEffect(() => {
     if (group) {
@@ -48,6 +48,8 @@ export default function GroupForm({ group, onClose, onSuccess, isEditMode: _isEd
     if (!validate()) {
       return;
     }
+
+
 
     setLoading(true);
     try {
@@ -83,6 +85,8 @@ export default function GroupForm({ group, onClose, onSuccess, isEditMode: _isEd
             <X size={20} />
           </button>
         </div>
+
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/*Name field */}
@@ -136,14 +140,14 @@ export default function GroupForm({ group, onClose, onSuccess, isEditMode: _isEd
             </select>
           </div>
 
-          {/*Save/Cancel buttons */}
+          {/* Save and Cancel buttons */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
             >
-              Cancel
+         Cancel
             </button>
             <button
               type="submit"

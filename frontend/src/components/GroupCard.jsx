@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle2, ArrowRight, Tag, Calendar, FileText } from 'lucide-react';
 import { tasksAPI } from '../utils/api';
 import DashboardCircle from './Dashboard';
 
@@ -8,7 +8,7 @@ export default function GroupCard({ group }) {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Load preview tasks for this group
   useEffect(() => {
     loadTasks();
   }, [group._id]);
@@ -53,10 +53,36 @@ export default function GroupCard({ group }) {
             <h3 className="font-display font-bold text-lg text-dark-800 truncate group-hover:text-primary-600 transition-colors">
               {group.name}
             </h3>
+
             <ArrowRight
               size={18}
               className="text-surface-200 group-hover:text-primary-500 group-hover:translate-x-1 transition-all flex-shrink-0"
             />
+          </div>
+
+          {/* GS6.b: Group Details */}
+          <div className="flex flex-wrap gap-4 text-xs text-surface-300 mb-3">
+
+            <div className="flex items-center gap-1">
+              <Tag size={14} />
+              <span>{group.category || 'Other'}</span>
+            </div>
+
+            {group.createdAt && (
+              <div className="flex items-center gap-1">
+                <Calendar size={14} />
+                <span>{new Date(group.createdAt).toLocaleDateString()}</span>
+              </div>
+            )}
+
+          </div>
+
+          {/* Description */}
+          <div className="flex items-start gap-2 mb-3 text-sm text-dark-800">
+            <FileText size={14} className="mt-0.5 text-surface-300" />
+            <span className="line-clamp-2">
+              {group.description || 'No description provided'}
+            </span>
           </div>
 
           <p className="text-xs font-semibold text-surface-300 uppercase tracking-wider mb-2">
@@ -69,15 +95,22 @@ export default function GroupCard({ group }) {
                 <div key={t._id} className="flex items-center gap-2 text-sm text-dark-800/70">
                   <CheckCircle2
                     size={14}
-                    className={t.status === 'completed' ? 'text-emerald-500' : 'text-surface-200'}
+                    className={t.status === 'completed'
+                      ? 'text-emerald-500'
+                      : 'text-surface-200'}
                   />
                   <span
-                    className={`truncate ${t.status === 'completed' ? 'line-through text-surface-300' : ''}`}
+                    className={`truncate ${
+                      t.status === 'completed'
+                        ? 'line-through text-surface-300'
+                        : ''
+                    }`}
                   >
                     {t.title}
                   </span>
                 </div>
               ))}
+
               {group.taskCount > 3 && (
                 <p className="text-xs text-primary-500 font-medium mt-2">
                   +{group.taskCount - 3} more tasks
@@ -96,6 +129,7 @@ export default function GroupCard({ group }) {
           <Users size={16} />
           <span>{group.memberCount || group.members?.length || 0} members</span>
         </div>
+
         <div className="flex items-center gap-2">
           <span className="badge-primary">{group.taskCount || 0} tasks</span>
         </div>

@@ -24,11 +24,11 @@ export default function useGroupActions({
       setShowEditGroup(true);
     }
   };
-
-  const handleEditGroupSuccess = () => {
+  
+    const handleEditGroupSuccess = () => {
     setShowEditGroup(false);
     reloadAll();
-  };
+  }; 
 
   const handleDeleteGroup = async () => {
     setDeleting(true);
@@ -44,9 +44,11 @@ export default function useGroupActions({
   };
 
   //edit group
-  const handleEditGroupClose = () => {
+
+    const handleEditGroupClose = () => {
     setShowEditGroup(false);
   };
+
 
   const handleShareProgress = async () => {
     if (!progressText.trim()) {
@@ -80,10 +82,12 @@ export default function useGroupActions({
     setShowEditGroup,
     setShowDeleteConfirm,
     setShowLeaveModal,
+
     setShowShareProgress,
     handleEditGroupClick,
     handleEditGroupSuccess,
     handleEditGroupClose,
+
     handleDeleteGroup,
     handleShareProgress,
   };
