@@ -75,7 +75,16 @@ router.get('/:groupId', auth, async (req, res) => {
       return res.status(403).json({ message: 'You are not a member of this group.' });
     }
 
-    return res.json(group);
+    return res.json({
+      _id: group._id,
+      name: group.name,
+      description: group.description,
+      category: group.category,
+      owner: group.owner,
+      members: group.members,
+      createdAt: group.createdAt,
+      updatedAt: group.updatedAt,
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
