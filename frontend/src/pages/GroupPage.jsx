@@ -437,13 +437,7 @@ export default function GroupPage() {
           <AnnouncementModal groupId={id} onClose={() => setShowAnnouncement(false)} />
         )}
 
-        {groupActions.showEditGroup && (
-          <GroupForm
-            group={group}
-            onClose={groupActions.handleEditGroupClose}
-            onSuccess={groupActions.handleEditGroupSuccess}
-          />
-        )}
+        
 
         <ConfirmDialog
           isOpen={groupActions.showDeleteConfirm}
@@ -465,6 +459,14 @@ export default function GroupPage() {
           />
         )}
 
+      {groupActions.showEditGroup && (
+          <GroupForm
+            group={group}
+            onClose={groupActions.handleEditGroupClose}
+            onSuccess={groupActions.handleEditGroupSuccess}
+          />
+        )}
+
         {groupActions.showShareProgress && (
           <ChatModal
             title="Share Your Progress"
@@ -481,4 +483,4 @@ export default function GroupPage() {
     </GroupProvider>
   );
 }
-}
+
