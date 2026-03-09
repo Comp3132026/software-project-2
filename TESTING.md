@@ -487,3 +487,32 @@ A test user was registered using:
 
 ```http
 POST /api/auth/register
+
+
+---
+
+## Functional API Testing
+
+### MemS5.d: Test and document if all tasks/habits are shown
+
+**Feature Tested:** `GET /api/tasks/group/:groupId`
+
+#### Purpose
+Verify that the API correctly returns all tasks and habits for a group, including both standard tasks and habit-based tasks.
+
+#### Preconditions
+- Backend server is running
+- MongoDB connection is active
+- User is registered and logged in
+- Valid JWT token is available
+- A group already exists
+- At least one regular task and one habit task have been created in the same group
+
+#### Test Setup
+Two records were created in the same group:
+1. A regular task with `isHabit: false`
+2. A habit task with `isHabit: true`
+
+#### Request
+```http
+GET /api/tasks/group/YOUR_GROUP_ID
