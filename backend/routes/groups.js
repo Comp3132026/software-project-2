@@ -61,7 +61,11 @@ router.get('/:groupId', auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId)
       .populate('owner', 'name email')
-      .populate('members.user', 'name email');
+      .populate('members.user', 'name email')
+      .populate({
+        path: 'tasks',
+        select: 'status title description dueDate assignedTo',
+      });
 
     if (!group) {
       return res.status(404).json({ message: 'Group not found.' });
@@ -76,14 +80,11 @@ router.get('/:groupId', auth, async (req, res) => {
     }
 
     return res.json({
-      _id: group._id,
-      name: group.name,
-      description: group.description,
-      category: group.category,
-      owner: group.owner,
-      members: group.members,
-      createdAt: group.createdAt,
-      updatedAt: group.updatedAt,
+      ...group.toJSON(),
+      memberCount: group.memberCount,
+      taskCount: group.taskCount,
+      completedTaskCount: group.completedTaskCount,
+      completionRate: group.completionRate,
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
