@@ -132,4 +132,4 @@ export default function LeaveGroupModal({ group, members, isOwner, onClose, onSu
       </div>
     </div>
   );
-}
+} 
