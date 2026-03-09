@@ -1,5 +1,6 @@
 const express = require('express');
 const Group = require('../models/Group');
+const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -32,6 +33,73 @@ router.get('/group/:groupId', auth, async (req, res) => {
     }));
 
     return res.json(members);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Add member to group
+router.post('/group/:groupId/add', auth, async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+    const validRoles = ['owner', 'moderator', 'member', 'viewer'];
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required.' });
+    }
+
+    if (role && !validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role.' });
+    }
+
+    const group = await Group.findById(req.params.groupId)
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email');
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    if (group.owner._id.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: 'Only the group owner can add members.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const alreadyMember =
+      group.owner._id.toString() === userId ||
+      group.members.some((m) => m.user._id.toString() === userId);
+
+    if (alreadyMember) {
+      return res.status(400).json({ message: 'User is already a member of this group.' });
+    }
+
+    group.members.push({
+      user: userId,
+      role: role || 'member',
+    });
+
+    await group.save();
+
+    const updatedGroup = await Group.findById(group._id)
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email');
+
+    const members = updatedGroup.members.map((m) => ({
+      userId: m.user._id,
+      name: m.user.name,
+      email: m.user.email,
+      role: m.role,
+      joinedAt: m.joinedAt,
+    }));
+
+    return res.json({
+      message: 'Member added successfully',
+      members,
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
