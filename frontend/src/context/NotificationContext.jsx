@@ -72,3 +72,4 @@ export function NotificationProvider({ children }) {
 export function useNotifications() {
   return useContext(NotificationContext);
 }
+}
