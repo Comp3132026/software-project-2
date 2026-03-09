@@ -166,4 +166,38 @@ router.put('/group/:groupId/:userId/role', auth, async (req, res) => {
   }
 });
 
+
+// Leave group
+router.post('/group/:groupId/leave', auth, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    // Owner cannot leave without transferring ownership first
+    if (group.owner.toString() === req.userId.toString()) {
+      return res.status(400).json({
+        message: 'Group owner cannot leave the group without transferring ownership first.',
+      });
+    }
+
+    const memberIndex = group.members.findIndex(
+      (m) => m.user.toString() === req.userId.toString()
+    );
+
+    if (memberIndex === -1) {
+      return res.status(400).json({ message: 'You are not a member of this group.' });
+    }
+
+    group.members.splice(memberIndex, 1);
+    await group.save();
+
+    return res.json({ message: 'You have left the group successfully.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
