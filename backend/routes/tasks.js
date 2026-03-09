@@ -127,6 +127,38 @@ router.get('/my-tasks', auth, async (req, res) => {
   }
 });
 
+// Get single task by ID
+router.get('/:taskId', auth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.taskId)
+      .populate('createdBy', 'name email')
+      .populate('assignedTo', 'name email')
+      .populate('group', 'name category owner members');
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found.' });
+    }
+
+    const group = await Group.findById(task.group._id);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const isMember =
+      group.owner.toString() === req.userId.toString() ||
+      group.members.some((m) => m.user.toString() === req.userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'You are not a member of this group.' });
+    }
+
+    return res.json(task);
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // assignTask API endpoint linking task to a member ID
 router.put('/:taskId/assign', auth, async (req, res) => {
   try {
