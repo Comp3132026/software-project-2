@@ -61,7 +61,11 @@ router.get('/:groupId', auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId)
       .populate('owner', 'name email')
-      .populate('members.user', 'name email');
+      .populate('members.user', 'name email')
+      .populate({
+        path: 'tasks',
+        select: 'status title description dueDate assignedTo',
+      });
 
     if (!group) {
       return res.status(404).json({ message: 'Group not found.' });
@@ -75,9 +79,65 @@ router.get('/:groupId', auth, async (req, res) => {
       return res.status(403).json({ message: 'You are not a member of this group.' });
     }
 
-    return res.json(group);
+    return res.json({
+      ...group.toJSON(),
+      memberCount: group.memberCount,
+      taskCount: group.taskCount,
+      completedTaskCount: group.completedTaskCount,
+      completionRate: group.completionRate,
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update group details (owner only)
+router.put('/:groupId', auth, validateGroup, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: errors.array()[0].msg,
+        errors: errors.array(),
+      });
+    }
+
+    const group = await Group.findById(req.params.groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    // Only owner can update the group
+    if (group.owner.toString() !== req.userId.toString()) {
+      return res
+        .status(403)
+        .json({ message: 'Only the group owner can edit group details.' });
+    }
+
+    const { name, description, category } = req.body;
+
+    group.name = name;
+    group.description = description !== undefined ? description : group.description;
+    group.category = category;
+
+    await group.save();
+
+    const populated = await Group.findById(group._id)
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email');
+
+    return res.json({
+      message: 'Group updated successfully',
+      group: populated,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    });
   }
 });
 

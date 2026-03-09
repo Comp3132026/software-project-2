@@ -36,9 +36,42 @@ const groupSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-groupSchema.pre('save', function (next) {
+groupSchema.pre('save', function () {
   this.updatedAt = Date.now();
-  next();
+  
 });
+
+groupSchema.virtual('memberCount').get(function () {
+  return (this.members || []).length;
+});
+
+groupSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'group',
+});
+
+groupSchema.virtual('taskCount').get(function () {
+  if (!Array.isArray(this.tasks)) {
+    return 0;
+  }
+  return this.tasks.length;
+});
+
+groupSchema.virtual('completedTaskCount').get(function () {
+  if (!Array.isArray(this.tasks)) {
+    return 0;
+  }
+  return this.tasks.filter((t) => t.status === 'completed').length;
+});
+
+groupSchema.virtual('completionRate').get(function () {
+  const total = this.taskCount;
+  const completed = this.completedTaskCount;
+  return total === 0 ? 0 : Math.round((completed / total) * 100);
+});
+
+groupSchema.set('toJSON', { virtuals: true });
+groupSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Group', groupSchema);
