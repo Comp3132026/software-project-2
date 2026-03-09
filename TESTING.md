@@ -459,3 +459,31 @@ lifesync/
 | 9 | `getPriorityBadge()` | Frontend | 10 | Priority badge config |
 | 10 | `getStatusBadge()` | Frontend | 10 | Status badge config |
 | | **TOTAL** | | **117** | |
+
+
+
+---
+
+## Functional API Testing
+
+### GS6.d: Functional Testing for `getGroup` API Endpoint
+
+**Feature Tested:** `GET /api/groups/:groupId`
+
+**Related Issue:** `GS6.a` / `GS6.d`
+
+#### Purpose
+Verify that the API endpoint correctly retrieves all necessary group data for a specific group, including owner, members, and task summary fields, while enforcing authentication and group membership access.
+
+#### Preconditions
+- Backend server is running
+- MongoDB connection is active
+- A user is registered successfully
+- A valid JWT token is available
+- A group has already been created by the authenticated user
+
+#### Test Setup
+A test user was registered using:
+
+```http
+POST /api/auth/register
