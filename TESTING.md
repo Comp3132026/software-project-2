@@ -6,11 +6,11 @@ This document outlines the unit testing implementation for **10 methods** in the
 
 **Total: 117 tests across 2 test files**
 
-| Location | Test File | Methods | Tests |
-|----------|-----------|---------|-------|
-| Backend | `__tests__/helpers.test.js` | 5 | 70 |
-| Frontend | `__tests__/utils/frontend.test.js` | 5 | 47 |
-| **Total** | | **10** | **117** |
+| Location |              Test File             | Methods | Tests |
+|----------|------------------------------------|---------|-------|
+| Backend  | `__tests__/helpers.test.js`        |    5    |  70   |
+| Frontend | `__tests__/utils/frontend.test.js` |    5    |  47   |
+| **Total** |                                   | **10**  | **117** |
 
 ---
 
@@ -459,3 +459,120 @@ lifesync/
 | 9 | `getPriorityBadge()` | Frontend | 10 | Priority badge config |
 | 10 | `getStatusBadge()` | Frontend | 10 | Status badge config |
 | | **TOTAL** | | **117** | |
+
+
+
+---
+
+## Functional API Testing
+
+### GS6.d: Functional Testing for `getGroup` API Endpoint
+
+**Feature Tested:** `GET /api/groups/:groupId`
+
+**Related Issue:** `GS6.a` / `GS6.d`
+
+#### Purpose
+Verify that the API endpoint correctly retrieves all necessary group data for a specific group, including owner, members, and task summary fields, while enforcing authentication and group membership access.
+
+#### Preconditions
+- Backend server is running
+- MongoDB connection is active
+- A user is registered successfully
+- A valid JWT token is available
+- A group has already been created by the authenticated user
+
+#### Test Setup
+A test user was registered using:
+
+```http
+POST /api/auth/register
+
+
+---
+
+## Functional API Testing
+
+### MemS5.d: Test and document if all tasks/habits are shown
+
+**Feature Tested:** `GET /api/tasks/group/:groupId`
+
+#### Purpose
+Verify that the API correctly returns all tasks and habits for a group, including both standard tasks and habit-based tasks.
+
+#### Preconditions
+- Backend server is running
+- MongoDB connection is active
+- User is registered and logged in
+- Valid JWT token is available
+- A group already exists
+- At least one regular task and one habit task have been created in the same group
+
+#### Test Setup
+Two records were created in the same group:
+1. A regular task with `isHabit: false`
+2. A habit task with `isHabit: true`
+
+#### Request
+```http
+GET /api/tasks/group/YOUR_GROUP_ID
+
+---
+
+## Functional API Testing (RBAC)
+
+### Date
+14 March 2026
+
+### Scope
+Conduct functional testing and document role assignment and permission changes for group/member/task authorization flows.
+
+### Environment Used
+- Backend running with `.env` settings and temporary override to isolated test DB:
+  - API: `http://localhost:5001/api`
+  - MongoDB: `mongodb://127.0.0.1:27018/lifesync`
+- Fresh test users created during run: owner, moderator, member, viewer, outsider.
+
+### Role Assignment & Permission Change Results
+
+| # | Scenario | Expected | Actual | Result |
+|---|----------|----------|--------|--------|
+| 1 | Register owner | 201 | 201 | ✅ |
+| 2 | Register moderator | 201 | 201 | ✅ |
+| 3 | Register member | 201 | 201 | ✅ |
+| 4 | Register viewer | 201 | 201 | ✅ |
+| 5 | Register outsider | 201 | 201 | ✅ |
+| 6 | Owner creates group | 201 | 201 | ✅ |
+| 7 | Owner adds moderator candidate | 200 | 200 | ✅ |
+| 8 | Owner adds member candidate | 200 | 200 | ✅ |
+| 9 | Owner adds viewer | 200 | 200 | ✅ |
+| 10 | Owner assigns moderator role | 200 | 200 | ✅ |
+| 11 | Moderator tries to add member | 403 | 403 | ✅ |
+| 12 | Moderator tries to change role | 403 | 403 | ✅ |
+| 13 | Member tries to edit group | 403 | 403 | ✅ |
+| 14 | Viewer creates task | 201 | 201 | ✅ |
+| 15 | Member tries to assign task | 403 | 403 | ✅ |
+| 16 | Owner assigns task | 200 | 200 | ✅ |
+| 17 | Owner transfers ownership (role=owner) | 200 | 200 | ✅ |
+| 18 | Previous owner (demoted) adds member | 403 | 403 | ✅ |
+| 19 | New owner adds member | 200 | 200 | ✅ |
+| 20 | Previous owner (demoted) deletes group | 403 | 403 | ✅ |
+| 21 | New owner deletes group | 200 | 200 | ✅ |
+
+### Summary
+- Passed: **21/21**
+- Failed: **0**
+
+### Role Assignment Change Log (Observed)
+
+| Step | Actor | Target User | Old Role | New Role | Endpoint | Result |
+|------|-------|-------------|----------|----------|----------|--------|
+| A | Owner | Moderator candidate | member | moderator | `PUT /api/members/group/:groupId/:userId/role` | 200 |
+| B | Owner | Moderator | moderator | owner | `PUT /api/members/group/:groupId/:userId/role` | 200 |
+| C | System effect after transfer | Previous owner | owner | member | same request as step B | Verified by 403 on owner-only actions |
+
+### Permission Notes
+- Owner-only actions are enforced for adding members, changing roles, and deleting group.
+- Non-owner users (moderator/member) are blocked from owner-only actions with `403`.
+- Task assignment endpoint is owner-only and correctly blocks member attempts (`403`).
+- **Observed RBAC mismatch:** a `viewer` can create tasks (`POST /api/tasks` returned `201`), while frontend RBAC matrix indicates viewer should not manage tasks.
