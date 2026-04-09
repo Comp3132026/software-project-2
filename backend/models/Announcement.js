@@ -53,9 +53,9 @@ const announcementSchema = new mongoose.Schema({
 announcementSchema.index({ group: 1, isPinned: -1, createdAt: -1 });
 announcementSchema.index({ group: 1, isActive: 1, publishAt: -1 });
 
-announcementSchema.pre('save', function (next) {
+announcementSchema.pre('save', function () {
   this.updatedAt = Date.now();
-  next();
+  
 });
 
 announcementSchema.virtual('readCount').get(function () {

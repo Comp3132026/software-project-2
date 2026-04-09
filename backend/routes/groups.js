@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Group = require('../models/Group');
 const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
+const Announcement = require('../models/Announcement');
 
 const router = express.Router();
 
@@ -157,6 +158,62 @@ router.delete('/:groupId', auth, async (req, res) => {
     await Group.findByIdAndDelete(group._id);
 
     return res.json({ message: 'Group and related tasks deleted successfully.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Publish announcement to a group
+router.post('/:groupId/announcements', auth, async (req, res) => {
+  try {
+    const { title, content, priority, category, expiresAt, targetRoles, isPinned, attachments } =
+      req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Announcement title is required.' });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Announcement content is required.' });
+    }
+
+    const group = await Group.findById(req.params.groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const isOwner = group.owner.toString() === req.userId.toString();
+    const membership = group.members.find((m) => m.user.toString() === req.userId.toString());
+    const isModerator = membership?.role === 'moderator';
+
+    if (!isOwner && !isModerator) {
+      return res
+        .status(403)
+        .json({ message: 'Only owners and moderators can publish announcements.' });
+    }
+
+    const announcement = await Announcement.create({
+      group: group._id,
+      author: req.userId,
+      title: title.trim(),
+      content: content.trim(),
+      priority: priority || 'normal',
+      category: category || 'general',
+      expiresAt: expiresAt || undefined,
+      targetRoles: Array.isArray(targetRoles) ? targetRoles : [],
+      isPinned: Boolean(isPinned),
+      attachments: Array.isArray(attachments) ? attachments : [],
+    });
+
+    const populatedAnnouncement = await Announcement.findById(announcement._id)
+      .populate('author', 'name email')
+      .populate('group', 'name');
+
+    return res.status(201).json({
+      message: 'Announcement published successfully',
+      announcement: populatedAnnouncement,
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
