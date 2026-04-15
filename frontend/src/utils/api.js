@@ -104,4 +104,8 @@ export const aiAPI = {
   suggestAssignee: (data) => api.post('/ai/suggest-assignee', data),
 };
 
+export const profileAPI = {
+  getProfile: (groupId, userId) => api.get(`/profiles/${groupId}/${userId}`),
+};
+
 export default api;

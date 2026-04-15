@@ -313,4 +313,60 @@ router.post("/group/:groupId/leave", auth, async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/members/flag/:groupId/:memberId
+ * Flag a member for moderation (moderator or owner, required: flag)
+ */
+router.put("/flag/:groupId/:memberId", auth, async (req, res) => {
+  try {
+    const { groupId, memberId } = req.params;
+    const { flag } = req.body;
+
+    if (!flag) {
+      return res.status(400).json({ message: "Flag is required." });
+    }
+
+    const group = await Group.findById(groupId).populate("members.user");
+    if (!group) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    const { canManage } = canManageMembers(group, req.userId);
+    if (!canManage) {
+      return res
+        .status(403)
+        .json({ message: "Only owner or moderator can flag members." });
+    }
+
+    const memberIndex = group.members.findIndex(
+      (m) => m.user._id.toString() === memberId,
+    );
+    if (memberIndex === -1) {
+      return res.status(404).json({ message: "Member not found." });
+    }
+
+    // Toggle suspension on flag "suspend"
+    if (flag === "suspend") {
+      group.members[memberIndex].isSuspended = !group.members[memberIndex].isSuspended;
+    }
+
+    await group.save();
+
+    const members = group.members.map((m) => ({
+      userId: m.user._id,
+      name: m.user.name,
+      email: m.user.email,
+      role: m.role,
+      isSuspended: m.isSuspended,
+      joinedAt: m.joinedAt,
+    }));
+
+    return res.json({ message: "Member flagged successfully", members });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
+  }
+});
+
 module.exports = router;
