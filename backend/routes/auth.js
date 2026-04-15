@@ -218,4 +218,35 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
+// Update profile
+router.put("/me", auth, async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { ...(name && { name }), ...(email && { email }) },
+      { new: true, runValidators: true }
+    );
+
+    return res.json({ message: "Profile updated", user: updatedUser });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
+  }
+});
+
+// Delete profile
+router.delete("/me", auth, async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.userId);
+    return res.json({ message: "Profile deleted successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
+  }
+});
+
 module.exports = router;
