@@ -53,6 +53,13 @@ router.post('/', auth, async (req, res) => {
       return res.status(404).json({ message: 'Group not found.' });
     }
 
+    const isMember = group.owner.toString() === req.userId.toString() ||
+      group.members.some((m) => m.user.toString() === req.userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'Not a member of this group.' });
+    }
+
     const member = group.members.find((m) => m.user.toString() === req.userId.toString());
     if (member && member.isSuspended) {
       return res.status(403).json({ message: 'You are suspended and cannot send messages.' });

@@ -154,6 +154,10 @@ router.delete('/:groupId', auth, async (req, res) => {
     }
 
     await Task.deleteMany({ group: group._id });
+    await Message.deleteMany({ group: group._id });
+    await Warning.deleteMany({ group: group._id });
+    await Notification.deleteMany({ group: group._id });
+    await HistoryLog.deleteMany({ group: group._id });
     await Group.findByIdAndDelete(group._id);
 
     return res.json({ message: 'Group and related tasks deleted successfully.' });
@@ -266,6 +270,8 @@ router.post('/:groupId/transfer-ownership', auth, async (req, res) => {
     const newOwnerIndex = group.members.findIndex((m) => m.user._id.toString() === newOwnerId.toString());
     if (newOwnerIndex !== -1) {
       group.members[newOwnerIndex].role = 'owner';
+    } else {
+      group.members.push({ user: newOwnerId, role: 'owner' });
     }
 
     group.owner = newOwnerId;
