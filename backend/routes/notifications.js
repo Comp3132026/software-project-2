@@ -63,18 +63,23 @@ router.post("/announcement/:groupId", auth, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Create notification for all group members
+    // Create notification for all group members + owner
     const notifications = [];
-    for (const member of group.members) {
-      if (member.user) {
-        const notification = await Notification.create({
-          user: member.user,
-          group: groupId,
-          type: "announcement",
-          message: `📢 Announcement from ${sender.name}: ${message}`,
-        });
-        notifications.push(notification);
-      }
+    const recipientIds = new Set();
+    
+    recipientIds.add(group.owner.toString());
+    group.members.forEach((m) => {
+      if (m.user) recipientIds.add(m.user.toString());
+    });
+
+    for (const userId of recipientIds) {
+      const notification = await Notification.create({
+        user: userId,
+        group: groupId,
+        type: "announcement",
+        message: `📢 Announcement from ${sender.name}: ${message}`,
+      });
+      notifications.push(notification);
     }
 
     // Log to history
