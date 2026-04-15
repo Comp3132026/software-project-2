@@ -12,9 +12,7 @@ const router = express.Router();
 
 /**
  * GET /api/profiles/:groupId/:userId
- * MemS1: View member profile (role + contributions)
- */
-router.get('/:groupId/:userId', auth, async (req, res) => {
+ * View member profile with role and contributions (members only)\n */\nrouter.get('/:groupId/:userId', auth, async (req, res) => {
   try {
     const { groupId, userId } = req.params;
     const viewerId = req.userId?.toString();

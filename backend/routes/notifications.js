@@ -7,7 +7,10 @@ const { auth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Get notifications for user
+/**
+ * GET /api/notifications
+ * Get all notifications for current user (limit 50, sorted by newest)
+ */
 router.get("/", auth, async (req, res) => {
   try {
     const notifications = await Notification.find({ user: req.userId })
@@ -22,9 +25,10 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// SEND ANNOUNCEMENT TO GROUP
-// ============================================
+/**
+ * POST /api/notifications/announcement/:groupId
+ * Send announcement to all group members (owner or moderator, required: message)
+ */
 router.post("/announcement/:groupId", auth, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -88,9 +92,10 @@ router.post("/announcement/:groupId", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// SET REMINDER FOR TASK
-// ============================================
+/**
+ * POST /api/notifications/reminder/:taskId
+ * Set reminder for a task (required: reminderDate, reminderMessage)
+ */
 router.post("/reminder/:taskId", auth, async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -128,9 +133,10 @@ router.post("/reminder/:taskId", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// GET REMINDERS FOR USER
-// ============================================
+/**
+ * GET /api/notifications/reminders
+ * Get all upcoming reminders for current user
+ */
 router.get("/reminders", auth, async (req, res) => {
   try {
     const tasks = await Task.find({
@@ -145,7 +151,10 @@ router.get("/reminders", auth, async (req, res) => {
   }
 });
 
-// Get history log for a group
+/**
+ * GET /api/notifications/history/:groupId
+ * Get activity history for a group (limit 50, sorted by newest)
+ */
 router.get("/history/:groupId", auth, async (req, res) => {
   try {
     const history = await HistoryLog.find({ group: req.params.groupId })
@@ -159,7 +168,10 @@ router.get("/history/:groupId", auth, async (req, res) => {
   }
 });
 
-// Mark notification as read
+/**
+ * PUT /api/notifications/:id/read
+ * Mark a single notification as read
+ */
 router.put("/:id/read", auth, async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
@@ -180,7 +192,10 @@ router.put("/:id/read", auth, async (req, res) => {
   }
 });
 
-// Mark all as read
+/**
+ * PUT /api/notifications/read-all
+ * Mark all notifications as read for current user
+ */
 router.put("/read-all", auth, async (req, res) => {
   try {
     await Notification.updateMany(
@@ -193,7 +208,10 @@ router.put("/read-all", auth, async (req, res) => {
   }
 });
 
-// Get unread count
+/**
+ * GET /api/notifications/unread-count
+ * Get count of unread notifications for current user
+ */
 router.get("/unread-count", auth, async (req, res) => {
   try {
     const count = await Notification.countDocuments({
@@ -206,7 +224,10 @@ router.get("/unread-count", auth, async (req, res) => {
   }
 });
 
-// Get notifications for a specific group
+/**
+ * GET /api/notifications/group/:groupId
+ * Get notifications for a specific group
+ */
 router.get("/group/:groupId", auth, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -225,8 +246,9 @@ router.get("/group/:groupId", auth, async (req, res) => {
   }
 });
 
-//frequency
-router.put("/frequency", auth, async (req, res) => {
+/**
+ * PUT /api/notifications/frequency
+ * Save notification frequency preference (required: frequency in body)\n */\nrouter.put(\"/frequency\", auth, async (req, res) => {
   try {
     const { frequency } = req.body;
 

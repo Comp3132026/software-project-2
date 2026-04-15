@@ -13,7 +13,10 @@ function canManageMembers(group, userId) {
   return { isOwner, isModerator, canManage: isOwner || isModerator };
 }
 
-// Fetch members for UI
+/**
+ * GET /api/members/group/:groupId
+ * Get all members in a group (group members only)
+ */
 router.get("/group/:groupId", auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId)
@@ -52,7 +55,10 @@ router.get("/group/:groupId", auth, async (req, res) => {
   }
 });
 
-// Add member to group
+/**
+ * POST /api/members/group/:groupId/add
+ * Add member to group (owner or moderator, required: userId)
+ */
 router.post("/group/:groupId/add", auth, async (req, res) => {
   try {
     const { userId, role } = req.body;
@@ -133,7 +139,10 @@ router.post("/group/:groupId/add", auth, async (req, res) => {
   }
 });
 
-// Search friends to add to group
+/**
+ * GET /api/members/search
+ * Search for users to add to group (query: q, groupId)
+ */
 router.get("/search", auth, async (req, res) => {
   try {
     const { q, groupId } = req.query;
@@ -168,7 +177,10 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// assignRole API endpoint
+/**
+ * PUT /api/members/group/:groupId/:userId/role
+ * Change member role in group (owner or moderator, required: role)
+ */
 router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
   try {
     const { role } = req.body;
@@ -254,7 +266,10 @@ router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
   }
 });
 
-// Leave group
+/**
+ * POST /api/members/group/:groupId/leave
+ * Leave a group (cannot leave if owner)
+ */
 router.post("/group/:groupId/leave", auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);

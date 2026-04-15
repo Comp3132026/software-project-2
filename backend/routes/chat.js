@@ -6,7 +6,10 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get messages for a group
+/**
+ * GET /api/chat/group/:groupId
+ * Get all messages in a group (members only)
+ */
 router.get('/group/:groupId', auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);
@@ -33,7 +36,10 @@ router.get('/group/:groupId', auth, async (req, res) => {
   }
 });
 
-// Send message
+/**
+ * POST /api/chat
+ * Send message to group (required: groupId, content)
+ */
 router.post('/', auth, async (req, res) => {
   try {
     const { groupId, content, type } = req.body;
@@ -72,7 +78,10 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Delete message
+/**
+ * DELETE /api/chat/:id
+ * Delete message (sender, moderator, or owner only)
+ */
 router.delete('/:id', auth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id).populate('group');
@@ -107,7 +116,10 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// warning message
+/**
+ * POST /api/chat/:id/warn
+ * Warn about a message (moderator or owner only, required: reason)
+ */
 router.post('/:id/warn', auth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id).populate('sender');
@@ -164,7 +176,10 @@ router.post('/:id/warn', auth, async (req, res) => {
   }
 });
 
-//Announcement
+/**
+ * PATCH /api/chat/pin/:msgId
+ * Pin or unpin message as announcement (moderator or owner only)
+ */
 router.patch('/pin/:msgId', auth, async (req, res) => {
   try {
     const { msgId } = req.params;
