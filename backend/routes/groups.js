@@ -5,8 +5,8 @@ const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
 const Announcement = require('../models/Announcement');
 const Progress = require('../models/Progress');
-const { HistoryLog } = require('../models/Notification');
-
+// const { HistoryLog } = require('../models/Notification');
+const { logGroupAction } = require('../services/logService');
 const router = express.Router();
 
 const validateGroup = [
@@ -32,6 +32,12 @@ router.post('/', auth, validateGroup, async (req, res) => {
       category,
       owner: req.userId,
       members: [{ user: req.userId, role: 'owner' }],
+    });
+    await logGroupAction({
+      group: group._id,
+      action: 'Group created',
+      performedBy: req.userId,
+      details: group.name,
     });
 
     const populated = await Group.findById(group._id)
@@ -205,7 +211,7 @@ router.post('/:groupId/announcements', auth, async (req, res) => {
       isPinned: Boolean(isPinned),
       attachments: Array.isArray(attachments) ? attachments : [],
     });
-    await HistoryLog.create({
+    await logGroupAction({
       group: group._id,
       action: 'Announcement published',
       performedBy: req.userId,

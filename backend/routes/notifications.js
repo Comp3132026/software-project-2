@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Group = require("../models/Group");
 const Task = require("../models/Task");
 const { auth } = require("../middleware/auth");
+const { logGroupAction } = require('../services/logService');
 
 const router = express.Router();
 
@@ -74,10 +75,10 @@ router.post("/announcement/:groupId", auth, async (req, res) => {
     }
 
     // Log to history
-    await HistoryLog.create({
+    await logGroupAction({
       group: groupId,
       performedBy: req.userId,
-      action: "Sent announcement",
+      action: 'Sent announcement',
       details: message.substring(0, 100),
     });
 
