@@ -5,7 +5,18 @@ const { auth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Fetch members for UI
+// Helper: Check if user can manage members (owner or moderator)
+function canManageMembers(group, userId) {
+  const isOwner = group.owner._id.toString() === userId.toString();
+  const memberRecord = group.members.find((m) => m.user._id.toString() === userId.toString());
+  const isModerator = memberRecord?.role === "moderator";
+  return { isOwner, isModerator, canManage: isOwner || isModerator };
+}
+
+/**
+ * GET /api/members/group/:groupId
+ * Get all members in a group (group members only)
+ */
 router.get("/group/:groupId", auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId)
@@ -44,7 +55,10 @@ router.get("/group/:groupId", auth, async (req, res) => {
   }
 });
 
-// Add member to group
+/**
+ * POST /api/members/group/:groupId/add
+ * Add member to group (owner or moderator, required: userId)
+ */
 router.post("/group/:groupId/add", auth, async (req, res) => {
   try {
     const { userId, role } = req.body;
@@ -66,10 +80,18 @@ router.post("/group/:groupId/add", auth, async (req, res) => {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    if (group.owner._id.toString() !== req.userId.toString()) {
+    // Permission check: owner or moderator can add members
+    const { canManage } = canManageMembers(group, req.userId);
+    if (!canManage) {
       return res
         .status(403)
-        .json({ message: "Only the group owner can add members." });
+        .json({ message: "Only owner or moderator can add members." });
+    }
+
+    // Check if requester is suspended
+    const requesterMember = group.members.find((m) => m.user._id.toString() === req.userId.toString());
+    if (requesterMember && requesterMember.isSuspended) {
+      return res.status(403).json({ message: "You are suspended." });
     }
 
     const user = await User.findById(userId);
@@ -117,7 +139,10 @@ router.post("/group/:groupId/add", auth, async (req, res) => {
   }
 });
 
-// Search friends to add to group
+/**
+ * GET /api/members/search
+ * Search for users to add to group (query: q, groupId)
+ */
 router.get("/search", auth, async (req, res) => {
   try {
     const { q, groupId } = req.query;
@@ -152,7 +177,10 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// assignRole API endpoint
+/**
+ * PUT /api/members/group/:groupId/:userId/role
+ * Change member role in group (owner or moderator, required: role)
+ */
 router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
   try {
     const { role } = req.body;
@@ -171,10 +199,25 @@ router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    if (group.owner._id.toString() !== req.userId.toString()) {
+    // Permission check: only owner or moderator
+    const { isOwner, canManage } = canManageMembers(group, req.userId);
+    if (!canManage) {
       return res
         .status(403)
-        .json({ message: "Only the group owner can change roles." });
+        .json({ message: "Only owner or moderator can change roles." });
+    }
+
+    // Check if requester is suspended
+    const requesterMember = group.members.find((m) => m.user._id.toString() === req.userId.toString());
+    if (requesterMember && requesterMember.isSuspended) {
+      return res.status(403).json({ message: "You are suspended." });
+    }
+
+    // Only owner can change owner role
+    if ((role === "owner" || group.owner._id.toString() === userId) && !isOwner) {
+      return res
+        .status(403)
+        .json({ message: "Only the owner can change owner role." });
     }
 
     if (group.owner._id.toString() === userId && role !== "owner") {
@@ -223,13 +266,22 @@ router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
   }
 });
 
-// Leave group
+/**
+ * POST /api/members/group/:groupId/leave
+ * Leave a group (cannot leave if owner)
+ */
 router.post("/group/:groupId/leave", auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);
 
     if (!group) {
       return res.status(404).json({ message: "Group not found." });
+    }
+
+    // Check if suspended
+    const member = group.members.find((m) => m.user.toString() === req.userId.toString());
+    if (member && member.isSuspended) {
+      return res.status(403).json({ message: "You are suspended." });
     }
 
     // Owner cannot leave without transferring ownership first
@@ -254,6 +306,62 @@ router.post("/group/:groupId/leave", auth, async (req, res) => {
     await group.save();
 
     return res.json({ message: "You have left the group successfully." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
+  }
+});
+
+/**
+ * PUT /api/members/flag/:groupId/:memberId
+ * Flag a member for moderation (moderator or owner, required: flag)
+ */
+router.put("/flag/:groupId/:memberId", auth, async (req, res) => {
+  try {
+    const { groupId, memberId } = req.params;
+    const { flag } = req.body;
+
+    if (!flag) {
+      return res.status(400).json({ message: "Flag is required." });
+    }
+
+    const group = await Group.findById(groupId).populate("members.user");
+    if (!group) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    const { canManage } = canManageMembers(group, req.userId);
+    if (!canManage) {
+      return res
+        .status(403)
+        .json({ message: "Only owner or moderator can flag members." });
+    }
+
+    const memberIndex = group.members.findIndex(
+      (m) => m.user._id.toString() === memberId,
+    );
+    if (memberIndex === -1) {
+      return res.status(404).json({ message: "Member not found." });
+    }
+
+    // Toggle suspension on flag "suspend"
+    if (flag === "suspend") {
+      group.members[memberIndex].isSuspended = !group.members[memberIndex].isSuspended;
+    }
+
+    await group.save();
+
+    const members = group.members.map((m) => ({
+      userId: m.user._id,
+      name: m.user.name,
+      email: m.user.email,
+      role: m.role,
+      isSuspended: m.isSuspended,
+      joinedAt: m.joinedAt,
+    }));
+
+    return res.json({ message: "Member flagged successfully", members });
   } catch (error) {
     return res
       .status(500)
