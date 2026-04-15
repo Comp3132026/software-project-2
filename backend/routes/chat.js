@@ -232,4 +232,33 @@ router.patch('/pin/:msgId', auth, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/chat/:id/report
+ * Report a message as inappropriate
+ */
+router.post('/:id/report', auth, async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+
+    if (message.reportedBy && message.reportedBy.includes(req.userId)) {
+      return res.status(400).json({ message: 'You have already reported this message.' });
+    }
+
+    if (!message.reportedBy) {
+      message.reportedBy = [];
+    }
+
+    message.reportedBy.push(req.userId);
+    message.isReported = true;
+    await message.save();
+
+    return res.json({ message: 'Message reported successfully.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;
