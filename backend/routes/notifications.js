@@ -66,7 +66,7 @@ router.post("/announcement/:groupId", auth, async (req, res) => {
     // Create notification for all group members + owner
     const notifications = [];
     const recipientIds = new Set();
-    
+
     recipientIds.add(group.owner.toString());
     group.members.forEach((m) => {
       if (m.user) recipientIds.add(m.user.toString());
@@ -253,7 +253,9 @@ router.get("/group/:groupId", auth, async (req, res) => {
 
 /**
  * PUT /api/notifications/frequency
- * Save notification frequency preference (required: frequency in body)\n */\nrouter.put(\"/frequency\", auth, async (req, res) => {
+ * Save notification frequency preference (required: frequency in body)\n
+ */
+router.put("/frequency", auth, async (req, res) => {
   try {
     const { frequency } = req.body;
 
