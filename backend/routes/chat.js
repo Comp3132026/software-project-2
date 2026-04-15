@@ -64,9 +64,52 @@ router.post('/', auth, async (req, res) => {
     const populated = await Message.findById(message._id).populate('sender', 'name email');
 
     const io = req.app.get('io');
-    io.to(groupId).emit('new-message', populated);
+    if (io) {
+      io.to(groupId).emit('new-message', populated);
+    }
 
     res.status(201).json(populated);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Edit message
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Updated message content is required.' });
+    }
+
+    const message = await Message.findById(req.params.id);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+
+    if (message.isDeleted) {
+      return res.status(400).json({ message: 'Deleted messages cannot be edited.' });
+    }
+
+    if (message.sender.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: 'You can only edit your own messages.' });
+    }
+
+    message.content = content.trim();
+    message.isEdited = true;
+    message.editedAt = new Date();
+
+    await message.save();
+
+    const populated = await Message.findById(message._id).populate('sender', 'name email');
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(message.group.toString()).emit('message-updated', populated);
+    }
+
+    res.json({ message: 'Message updated successfully.', data: populated });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -96,11 +139,21 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
-    // SOFT DELETE
     message.isDeleted = true;
     message.content = '';
     message.deletedAt = new Date();
     await message.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(message.group._id.toString()).emit('message-deleted', {
+        _id: message._id,
+        group: message.group._id,
+        isDeleted: true,
+        deletedAt: message.deletedAt,
+      });
+    }
+
     res.json({ message: 'Message deleted.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -120,7 +173,6 @@ router.post('/:id/warn', auth, async (req, res) => {
       return res.status(404).json({ message: 'Group not found.' });
     }
 
-    // Check permission
     const userId = req.userId.toString();
 
     const isOwner = group.owner.toString() === userId;
@@ -137,12 +189,10 @@ router.post('/:id/warn', auth, async (req, res) => {
       return res.status(400).json({ message: 'Reason is required.' });
     }
 
-    // Already warned?
     if (message.type === 'warning') {
       return res.status(400).json({ message: 'This message is already marked as a warning.' });
     }
 
-    // Apply warning
     message.type = 'warning';
     message.warning = {
       reason,
@@ -152,11 +202,13 @@ router.post('/:id/warn', auth, async (req, res) => {
 
     await message.save();
 
-    // Send socket notification
-    req.app.get('io').to(message.sender._id.toString()).emit('warning', {
-      messageId: message._id,
-      reason,
-    });
+    const io = req.app.get('io');
+    if (io) {
+      io.to(message.sender._id.toString()).emit('warning', {
+        messageId: message._id,
+        reason,
+      });
+    }
 
     res.json({ message: 'Warning issued successfully.', data: message });
   } catch (err) {
@@ -164,11 +216,11 @@ router.post('/:id/warn', auth, async (req, res) => {
   }
 });
 
-//Announcement
+// Announcement
 router.patch('/pin/:msgId', auth, async (req, res) => {
   try {
     const { msgId } = req.params;
-    const userId = req.user._id;
+    const userId = req.userId;
 
     const msg = await Message.findById(msgId);
     if (!msg) {
@@ -193,26 +245,27 @@ router.patch('/pin/:msgId', auth, async (req, res) => {
       return res.status(400).json({ message: 'Cannot pin deleted message' });
     }
 
-    // toggle pin
     msg.pinned = !msg.pinned;
     await msg.save();
 
-    // emit to socket
-    req.app.get('io').to(msg.group.toString()).emit('messagePinned', msg);
+    const io = req.app.get('io');
+    if (io) {
+      io.to(msg.group.toString()).emit('messagePinned', msg);
+    }
 
-    // Create notification
-    for (const member of group.members) {
-      await Notification.create({
-        user: member.user,
-        group: group._id,
-        type: 'group_update',
-        message: msg.pinned ? 'A new announcement was posted.' : 'An announcement was removed.',
-      });
+    if (Notification) {
+      for (const member of group.members) {
+        await Notification.create({
+          user: member.user,
+          group: group._id,
+          type: 'group_update',
+          message: msg.pinned ? 'A new announcement was posted.' : 'An announcement was removed.',
+        });
+      }
     }
 
     res.json(msg);
   } catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'Server error' });
   }
 });

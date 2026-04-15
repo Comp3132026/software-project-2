@@ -8,6 +8,7 @@ const groupRoutes = require("./routes/groups");
 const taskRoutes = require("./routes/tasks");
 const memberRoutes = require("./routes/members");
 const notificationRoutes = require("./routes/notifications");
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 
@@ -30,7 +31,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use('/api/chat', chatRoutes);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use((err, req, res, next) => {
