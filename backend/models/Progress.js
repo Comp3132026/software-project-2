@@ -48,9 +48,8 @@ progressSchema.index({ group: 1, createdAt: -1 });
 progressSchema.index({ user: 1, createdAt: -1 });
 progressSchema.index({ group: 1, isPinned: -1, createdAt: -1 });
 
-progressSchema.pre('save', function (next) {
+progressSchema.pre('save', function () {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Progress', progressSchema);
