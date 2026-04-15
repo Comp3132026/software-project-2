@@ -20,8 +20,10 @@ const validateLogin = [
   body("email").isEmail().normalizeEmail(),
   body("password").notEmpty(),
 ];
-
-router.post("/register", validateRegister, async (req, res) => {
+/**
+ * POST /api/auth/register
+ * Create new user account (required: name, email, password)
+ */router.post("/register", validateRegister, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -52,6 +54,10 @@ router.post("/register", validateRegister, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/login
+ * Login user (required: email, password) - returns user and token
+ */
 router.post("/login", validateLogin, async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -81,6 +87,10 @@ router.post("/login", validateLogin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/auth/me
+ * Get current logged-in user profile
+ */
 router.get("/me", auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -92,7 +102,10 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-// Get friends list (for GS2 - adding members from friends)
+/**
+ * GET /api/auth/friends
+ * Get friends list for current user
+ */
 router.get("/friends", auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate(
@@ -105,7 +118,10 @@ router.get("/friends", auth, async (req, res) => {
   }
 });
 
-// Add friend
+/**
+ * POST /api/auth/friends/:userId
+ * Add a user as friend (bi-directional)
+ */
 router.post("/friends/:userId", auth, async (req, res) => {
   try {
     const friendId = req.params.userId;
@@ -157,7 +173,10 @@ router.post("/friends/:userId", auth, async (req, res) => {
   }
 });
 
-// Remove friend (bi-directional)
+/**
+ * DELETE /api/auth/friends/:userId
+ * Remove a friend (bi-directional)
+ */
 router.delete("/friends/:userId", auth, async (req, res) => {
   try {
     const friendId = req.params.userId;
@@ -194,7 +213,10 @@ router.delete("/friends/:userId", auth, async (req, res) => {
   }
 });
 
-// Search users
+/**
+ * GET /api/auth/search
+ * Search for users by name or email (query: q, minimum 2 characters)
+ */
 router.get("/search", auth, async (req, res) => {
   try {
     const { q } = req.query;
@@ -218,7 +240,10 @@ router.get("/search", auth, async (req, res) => {
   }
 });
 
-// Update profile
+/**
+ * PUT /api/auth/me
+ * Update user profile (optional: name, email)
+ */
 router.put("/me", auth, async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -237,7 +262,10 @@ router.put("/me", auth, async (req, res) => {
   }
 });
 
-// Delete profile
+/**
+ * DELETE /api/auth/me
+ * Delete user account permanently
+ */
 router.delete("/me", auth, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.userId);
