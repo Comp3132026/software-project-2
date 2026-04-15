@@ -4,6 +4,7 @@ const Group = require('../models/Group');
 const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
 const Announcement = require('../models/Announcement');
+const Progress = require('../models/Progress');
 
 const router = express.Router();
 
@@ -110,7 +111,6 @@ router.put('/:groupId', auth, validateGroup, async (req, res) => {
       return res.status(404).json({ message: 'Group not found.' });
     }
 
-    // Only owner can update the group
     if (group.owner.toString() !== req.userId.toString()) {
       return res
         .status(403)
@@ -133,7 +133,6 @@ router.put('/:groupId', auth, validateGroup, async (req, res) => {
       message: 'Group updated successfully',
       group: populated,
     });
-
   } catch (error) {
     return res.status(500).json({
       message: 'Server error',
@@ -213,6 +212,65 @@ router.post('/:groupId/announcements', auth, async (req, res) => {
     return res.status(201).json({
       message: 'Announcement published successfully',
       announcement: populatedAnnouncement,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Submit a progress update to a group
+router.post('/:groupId/progress', auth, async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      type,
+      task,
+      metrics,
+      attachments,
+      isPublic,
+      isPinned,
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Progress title is required.' });
+    }
+
+    const group = await Group.findById(req.params.groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const isMember =
+      group.owner.toString() === req.userId.toString() ||
+      group.members.some((m) => m.user.toString() === req.userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'You are not a member of this group.' });
+    }
+
+    const progress = await Progress.create({
+      group: group._id,
+      user: req.userId,
+      title: title.trim(),
+      description: description?.trim() || '',
+      type: type || 'daily_update',
+      task: task || undefined,
+      metrics: metrics || {},
+      attachments: Array.isArray(attachments) ? attachments : [],
+      isPublic: isPublic !== undefined ? Boolean(isPublic) : true,
+      isPinned: Boolean(isPinned),
+    });
+
+    const populatedProgress = await Progress.findById(progress._id)
+      .populate('user', 'name email')
+      .populate('group', 'name')
+      .populate('task', 'title status');
+
+    return res.status(201).json({
+      message: 'Progress submitted successfully',
+      progress: populatedProgress,
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error: error.message });
