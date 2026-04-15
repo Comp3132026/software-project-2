@@ -5,6 +5,7 @@ const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
 const Announcement = require('../models/Announcement');
 const Progress = require('../models/Progress');
+const { HistoryLog } = require('../models/Notification');
 
 const router = express.Router();
 
@@ -203,6 +204,12 @@ router.post('/:groupId/announcements', auth, async (req, res) => {
       targetRoles: Array.isArray(targetRoles) ? targetRoles : [],
       isPinned: Boolean(isPinned),
       attachments: Array.isArray(attachments) ? attachments : [],
+    });
+    await HistoryLog.create({
+      group: group._id,
+      action: 'Announcement published',
+      performedBy: req.userId,
+      details: title.trim(),
     });
 
     const populatedAnnouncement = await Announcement.findById(announcement._id)
