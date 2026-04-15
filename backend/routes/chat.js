@@ -190,7 +190,7 @@ router.post('/:id/warn', auth, async (req, res) => {
 router.patch('/pin/:msgId', auth, async (req, res) => {
   try {
     const { msgId } = req.params;
-    const userId = req.user._id;
+    const userId = req.userId;
 
     const msg = await Message.findById(msgId);
     if (!msg) {
