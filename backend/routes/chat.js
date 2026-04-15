@@ -6,10 +6,7 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-/**
- * GET /api/chat/group/:groupId
- * Get all messages in a group (members only)
- */
+// Get messages for a group
 router.get('/group/:groupId', auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);
@@ -36,10 +33,7 @@ router.get('/group/:groupId', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /api/chat
- * Send message to group (required: groupId, content)
- */
+// Send message
 router.post('/', auth, async (req, res) => {
   try {
     const { groupId, content, type } = req.body;
@@ -51,13 +45,6 @@ router.post('/', auth, async (req, res) => {
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: 'Group not found.' });
-    }
-
-    const isMember = group.owner.toString() === req.userId.toString() ||
-      group.members.some((m) => m.user.toString() === req.userId.toString());
-
-    if (!isMember) {
-      return res.status(403).json({ message: 'Not a member of this group.' });
     }
 
     const member = group.members.find((m) => m.user.toString() === req.userId.toString());
@@ -85,10 +72,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/chat/:id
- * Delete message (sender, moderator, or owner only)
- */
+// Delete message
 router.delete('/:id', auth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id).populate('group');
@@ -123,10 +107,7 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-/**
- * POST /api/chat/:id/warn
- * Warn about a message (moderator or owner only, required: reason)
- */
+// warning message
 router.post('/:id/warn', auth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id).populate('sender');
@@ -183,10 +164,7 @@ router.post('/:id/warn', auth, async (req, res) => {
   }
 });
 
-/**
- * PATCH /api/chat/pin/:msgId
- * Pin or unpin message as announcement (moderator or owner only)
- */
+//Announcement
 router.patch('/pin/:msgId', auth, async (req, res) => {
   try {
     const { msgId } = req.params;
@@ -236,35 +214,6 @@ router.patch('/pin/:msgId', auth, async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Server error' });
-  }
-});
-
-/**
- * POST /api/chat/:id/report
- * Report a message as inappropriate
- */
-router.post('/:id/report', auth, async (req, res) => {
-  try {
-    const message = await Message.findById(req.params.id);
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
-
-    if (message.reportedBy && message.reportedBy.includes(req.userId)) {
-      return res.status(400).json({ message: 'You have already reported this message.' });
-    }
-
-    if (!message.reportedBy) {
-      message.reportedBy = [];
-    }
-
-    message.reportedBy.push(req.userId);
-    message.isReported = true;
-    await message.save();
-
-    return res.json({ message: 'Message reported successfully.' });
-  } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
