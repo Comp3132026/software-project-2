@@ -7,6 +7,12 @@ const memberSchema = new mongoose.Schema({
     enum: ['owner', 'moderator', 'member', 'viewer'],
     default: 'member',
   },
+  isSuspended: { type: Boolean, default: false },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'unresponsive'],
+    default: 'active',
+  },
   joinedAt: { type: Date, default: Date.now },
 });
 
@@ -36,9 +42,9 @@ const groupSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-groupSchema.pre('save', function () {
+groupSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
-  
+  next();
 });
 
 groupSchema.virtual('memberCount').get(function () {
@@ -69,6 +75,18 @@ groupSchema.virtual('completionRate').get(function () {
   const total = this.taskCount;
   const completed = this.completedTaskCount;
   return total === 0 ? 0 : Math.round((completed / total) * 100);
+});
+
+groupSchema.virtual('inactiveCount').get(function () {
+  return (this.members ?? []).filter((m) => m.status === 'inactive').length;
+});
+
+groupSchema.virtual('unresponsiveCount').get(function () {
+  return (this.members ?? []).filter((m) => m.status === 'unresponsive').length;
+});
+
+groupSchema.virtual('activeCount').get(function () {
+  return (this.members ?? []).filter((m) => m.status === 'active').length;
 });
 
 groupSchema.set('toJSON', { virtuals: true });
