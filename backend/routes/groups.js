@@ -345,8 +345,14 @@ router.get('/:groupId/inactive', auth, async (req, res) => {
     }
 
     return res.json({
-      group: group.name,
+      group: {
+        _id: group._id,
+        name: group.name,
+      },
+      thresholdDays: parseInt(days),
+      totalMembers: group.members.length,
       inactiveCount: inactiveMembers.length,
+      activeCount: group.members.length - inactiveMembers.length,
       inactiveMembers,
     });
   } catch (error) {
