@@ -3,29 +3,47 @@ import { X, LogOut } from 'lucide-react';
 import { groupsAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 
-export default function LeaveGroupModal({ group, members, isOwner, onClose, onSuccess }) {
+export default function LeaveGroupModal({ group, members = [], isOwner, onClose, onSuccess }) {
   const [newOwnerId, setNewOwnerId] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Filter out the owner from potential new owners
+  // Use actual user IDs, not membership IDs
   const eligibleMembers = members.filter((m) => m.role !== 'owner');
 
   const handleLeave = async () => {
-    //Owner must assign new owner before leaving
-    if (isOwner && !newOwnerId) {
-      toast.error('Please select a new owner before leaving');
-      return;
+    if (isOwner) {
+      if (eligibleMembers.length === 0) {
+        toast.error('No eligible member available for ownership transfer.');
+        return;
+      }
+
+      if (!newOwnerId) {
+        toast.error('Please select a new owner before leaving.');
+        return;
+      }
     }
 
     setLoading(true);
+
     try {
-      await groupsAPI.leave(group._id, isOwner ? { newOwnerId } : {});
+      // Step 1: transfer ownership first if current user is owner
+      if (isOwner) {
+        await groupsAPI.transferOwnership(group._id, {
+          newOwnerId,
+        });
+      }
+
+      // Step 2: then leave group
+      await groupsAPI.leave(group._id, {});
+
       toast.success('You have left the group');
       onSuccess?.();
     } catch (err) {
+      console.error('Leave group error:', err);
       toast.error(err.response?.data?.message || 'Failed to leave group');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -45,15 +63,16 @@ export default function LeaveGroupModal({ group, members, isOwner, onClose, onSu
           Are you sure you want to leave &quot;{group.name}&quot;?
         </p>
 
-        {/* MemS3: Owner must assign new owner */}
         {isOwner && (
           <div className="mb-4">
             <p className="text-sm text-orange-600 mb-2">
               As the owner, you must assign a new owner before leaving.
             </p>
+
             <label className="block text-sm font-medium mb-1">
               Select New Owner <span className="text-red-500">*</span>
             </label>
+
             <select
               value={newOwnerId}
               onChange={(e) => setNewOwnerId(e.target.value)}
@@ -61,11 +80,12 @@ export default function LeaveGroupModal({ group, members, isOwner, onClose, onSu
             >
               <option value="">Select a member...</option>
               {eligibleMembers.map((m) => (
-                <option key={m._id} value={m._id}>
+                <option key={m.userId || m._id} value={m.userId || m._id}>
                   {m.name} ({m.role})
                 </option>
               ))}
             </select>
+
             {eligibleMembers.length === 0 && (
               <p className="text-xs text-red-500 mt-1">
                 No other members to transfer ownership to. You must add members first or delete the
@@ -78,10 +98,12 @@ export default function LeaveGroupModal({ group, members, isOwner, onClose, onSu
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
+            disabled={loading}
+            className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 disabled:opacity-50"
           >
             Cancel
           </button>
+
           <button
             onClick={handleLeave}
             disabled={loading || (isOwner && !newOwnerId)}
