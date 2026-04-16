@@ -61,14 +61,14 @@ router.get("/:groupId/:userId", auth, async (req, res) => {
       .lean();
 
     // Owner may not have a membership row → treat separately
-    let role = membership?.role || "member";
+    let role = membership?.role || "Member";
     let joinDate = membership?.joinDate || null;
-    let status = membership?.status || "active";
+    let status = membership?.status || "Active";
 
     if (userId === ownerId) {
-      role = "owner";
+      role = "Owner";
       joinDate = group.createdAt || joinDate;
-      status = "active";
+      status = "Active";
     }
 
     // 5) Contributions from Task model

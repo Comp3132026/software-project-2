@@ -27,7 +27,8 @@ router.post('/', auth, validateTask, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
+      return res.status(400).json({
+        message: errors.array()[0].msg, errors: errors.array() });
     }
 
     const { groupId, title, description, dueDate, priority, assignedTo, isHabit, frequency } =
@@ -38,6 +39,7 @@ router.post('/', auth, validateTask, async (req, res) => {
     }
 
     const group = await Group.findById(groupId);
+
     if (!group) {
       return res.status(404).json({ message: 'Group not found.' });
     }
