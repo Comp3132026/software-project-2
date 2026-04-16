@@ -8,9 +8,7 @@ const router = express.Router();
 // Helper: Check if user can manage members (owner or moderator)
 function canManageMembers(group, userId) {
   const isOwner = group.owner._id.toString() === userId.toString();
-  const memberRecord = group.members.find(
-    (m) => m.user._id.toString() === userId.toString(),
-  );
+  const memberRecord = group.members.find((m) => m.user._id.toString() === userId.toString());
   const isModerator = memberRecord?.role === "moderator";
   return { isOwner, isModerator, canManage: isOwner || isModerator };
 }
@@ -49,11 +47,7 @@ router.get("/group/:groupId", auth, async (req, res) => {
       joinedAt: m.joinedAt,
     }));
 
-    return res.json({
-      groupId: group._id,
-      groupName: group.name,
-      members,
-    });
+    return res.json(members);
   } catch (error) {
     return res
       .status(500)
@@ -95,9 +89,7 @@ router.post("/group/:groupId/add", auth, async (req, res) => {
     }
 
     // Check if requester is suspended
-    const requesterMember = group.members.find(
-      (m) => m.user._id.toString() === req.userId.toString(),
-    );
+    const requesterMember = group.members.find((m) => m.user._id.toString() === req.userId.toString());
     if (requesterMember && requesterMember.isSuspended) {
       return res.status(403).json({ message: "You are suspended." });
     }
@@ -216,18 +208,13 @@ router.put("/group/:groupId/:userId/role", auth, async (req, res) => {
     }
 
     // Check if requester is suspended
-    const requesterMember = group.members.find(
-      (m) => m.user._id.toString() === req.userId.toString(),
-    );
+    const requesterMember = group.members.find((m) => m.user._id.toString() === req.userId.toString());
     if (requesterMember && requesterMember.isSuspended) {
       return res.status(403).json({ message: "You are suspended." });
     }
 
     // Only owner can change owner role
-    if (
-      (role === "owner" || group.owner._id.toString() === userId) &&
-      !isOwner
-    ) {
+    if ((role === "owner" || group.owner._id.toString() === userId) && !isOwner) {
       return res
         .status(403)
         .json({ message: "Only the owner can change owner role." });
@@ -292,9 +279,7 @@ router.post("/group/:groupId/leave", auth, async (req, res) => {
     }
 
     // Check if suspended
-    const member = group.members.find(
-      (m) => m.user.toString() === req.userId.toString(),
-    );
+    const member = group.members.find((m) => m.user.toString() === req.userId.toString());
     if (member && member.isSuspended) {
       return res.status(403).json({ message: "You are suspended." });
     }
@@ -362,8 +347,7 @@ router.put("/flag/:groupId/:memberId", auth, async (req, res) => {
 
     // Toggle suspension on flag "suspend"
     if (flag === "suspend") {
-      group.members[memberIndex].isSuspended =
-        !group.members[memberIndex].isSuspended;
+      group.members[memberIndex].isSuspended = !group.members[memberIndex].isSuspended;
     }
 
     await group.save();
