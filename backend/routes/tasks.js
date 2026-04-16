@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const Task = require('../models/Task');
 const Group = require('../models/Group');
 const { auth } = require('../middleware/auth');
+const { sendNotification } = require('../services/notificationService');
 
 const router = express.Router();
 
@@ -49,7 +50,9 @@ router.post('/', auth, validateTask, async (req, res) => {
       return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
     }
 
-    const { groupId, title, description, dueDate, priority, isHabit, frequency } = req.body;
+    const { groupId, title, description, dueDate, priority, isHabit, frequency, assignedTo } =
+      req.body;
+
     if (!groupId) {
       return res.status(400).json({ message: 'Group ID is required.' });
     }
@@ -67,6 +70,15 @@ router.post('/', auth, validateTask, async (req, res) => {
       return res.status(403).json({ message: 'Not allowed to create tasks in this group.' });
     }
 
+    let validAssignees = [];
+    if (Array.isArray(assignedTo)) {
+      validAssignees = assignedTo.filter(
+        (userId) =>
+          group.owner.toString() === userId ||
+          group.members.some((m) => m.user.toString() === userId)
+      );
+    }
+
     const task = await Task.create({
       title,
       description: description || '',
@@ -76,8 +88,19 @@ router.post('/', auth, validateTask, async (req, res) => {
       priority: priority || 'medium',
       isHabit: !!isHabit,
       frequency: frequency || 'once',
-      assignedTo: [],
+      assignedTo: validAssignees,
     });
+
+    if (task.dueDate && task.assignedTo.length > 0) {
+      for (const userId of task.assignedTo) {
+        await sendNotification({
+          user: userId,
+          group: groupId,
+          type: 'reminder',
+          message: `Task "${task.title}" is due on ${new Date(task.dueDate).toLocaleDateString()}`,
+        });
+      }
+    }
 
     const populated = await Task.findById(task._id)
       .populate('createdBy', 'name email')
@@ -275,6 +298,15 @@ router.put('/:taskId/assign', auth, async (req, res) => {
 
     task.assignedTo = [memberId];
     await task.save();
+
+    if (task.dueDate) {
+      await sendNotification({
+        user: memberId,
+        group: task.group,
+        type: 'reminder',
+        message: `Task "${task.title}" is due on ${new Date(task.dueDate).toLocaleDateString()}`,
+      });
+    }
 
     const populated = await Task.findById(task._id)
       .populate('createdBy', 'name email')

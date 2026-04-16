@@ -9,6 +9,8 @@ const Progress = require('../models/Progress');
 const { logGroupAction } = require('../services/logService');
 const router = express.Router();
 const Message = require('../models/Message');
+const { notifyGroup } = require('../services/notificationService');
+
 
 
 const validateGroup = [
@@ -134,6 +136,20 @@ router.put('/:groupId', auth, validateGroup, async (req, res) => {
 
     await group.save();
 
+    await logGroupAction({
+      group: group._id,
+      action: 'Group updated',
+      performedBy: req.userId,
+      details: group.name,
+    });
+
+    await notifyGroup({
+      group: group._id,
+      members: group.members.filter((m) => m.user.toString() !== req.userId.toString()),
+      type: 'group_update',
+      message: `Group "${group.name}" was updated`,
+    });
+
     const populated = await Group.findById(group._id)
       .populate('owner', 'name email')
       .populate('members.user', 'name email');
@@ -218,6 +234,12 @@ router.post('/:groupId/announcements', auth, async (req, res) => {
       action: 'Announcement published',
       performedBy: req.userId,
       details: title.trim(),
+    });
+    await notifyGroup({
+      group: group._id,
+      members: group.members,
+      type: 'announcement',
+      message: title,
     });
 
     const populatedAnnouncement = await Announcement.findById(announcement._id)
