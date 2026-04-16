@@ -27,9 +27,8 @@ router.post('/', auth, validateTask, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res
-        .status(400)
-        .json({ message: errors.array()[0].msg, errors: errors.array() });
+      return res.status(400).json({
+        message: errors.array()[0].msg, errors: errors.array() });
     }
 
     const { groupId, title, description, dueDate, priority, assignedTo, isHabit, frequency } =
@@ -115,6 +114,7 @@ router.post('/', auth, validateTask, async (req, res) => {
       .populate('assignedTo', 'name email');
 
     res.status(201).json({ message: 'Task created successfully', task: populated });
+
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -183,7 +183,8 @@ router.get('/my-tasks', auth, async (req, res) => {
 
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({
+      message: 'Server error', error: error.message });
   }
 });
 
@@ -211,7 +212,8 @@ router.put('/:taskId', auth, validateTask, async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
+      return res.status(400).json({ message:
+        errors.array()[0].msg, errors: errors.array() });
     }
 
     const task = await Task.findById(req.params.taskId);
@@ -221,8 +223,7 @@ router.put('/:taskId', auth, validateTask, async (req, res) => {
 
     const group = await Group.findById(task.group);
     const isOwner = group.owner.toString() === req.userId.toString();
-    const member =
-      group.members.find((m) => m.user.toString() === req.userId.toString()) || {};
+    const member = group.members.find((m) => m.user.toString() === req.userId.toString());
 
     if (!isOwner && (!member || member.role === 'viewer')) {
       return res.status(403).json({ message: 'Viewers cannot update tasks.' });
@@ -239,7 +240,8 @@ router.put('/:taskId', auth, validateTask, async (req, res) => {
         _id: { $ne: task._id },
       });
       if (existing) {
-        return res.status(400).json({ message: 'A task with this title already exists.' });
+        return res.status(400).json({
+          message: 'A task with this title already exists.' });
       }
     }
 
@@ -308,18 +310,17 @@ router.put('/:taskId/assign', auth, async (req, res) => {
     const { assignedTo } = req.body;
 
     const task = await Task.findById(req.params.taskId);
-
     if (!task) {
       return res.status(404).json({ message: 'Task not found.' });
     }
 
     const group = await Group.findById(task.group);
     const isOwner = group.owner.toString() === req.userId.toString();
-    const member =
-      group.members.find((m) => m.user.toString() === req.userId.toString()) || {};
+    const member = group.members.find((m) => m.user.toString() === req.userId.toString());
 
     if (!isOwner && (!member || member.role === 'viewer')) {
-      return res.status(403).json({ message: 'Viewers cannot assign tasks.' });
+      return res.status(403).json({
+        message: 'Viewers cannot assign tasks.' });
     }
 
     // Validate assignees
@@ -337,7 +338,7 @@ router.put('/:taskId/assign', auth, async (req, res) => {
 
     // Find new assignees to notify
     const newAssignees = validAssignees.filter(
-      (id) => !task.assignedTo.map((a) => a.toString()).includes(id),
+      (id) => !task.assignedTo.map((a) => a.toString()).includes(id)
     );
 
     task.assignedTo = validAssignees;
@@ -387,7 +388,7 @@ router.post('/:taskId/complete', auth, async (req, res) => {
     }
 
     const alreadyCompleted = task.completedBy.some(
-      (c) => c.user.toString() === req.userId.toString(),
+      (c) => c.user.toString() === req.userId.toString()
     );
 
     if (alreadyCompleted) {
@@ -451,7 +452,8 @@ router.delete('/:taskId', auth, async (req, res) => {
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({
+      message: 'Server error', error: error.message });
   }
 });
 
