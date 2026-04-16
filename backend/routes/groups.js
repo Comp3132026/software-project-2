@@ -5,9 +5,11 @@ const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
 const Announcement = require('../models/Announcement');
 const Progress = require('../models/Progress');
-// const { HistoryLog } = require('../models/Notification');
+
 const { logGroupAction } = require('../services/logService');
 const router = express.Router();
+const Message = require('../models/Message');
+
 
 const validateGroup = [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be 2-100 characters'),
@@ -289,5 +291,68 @@ router.post('/:groupId/progress', auth, async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+
+// Get inactive members in a group
+router.get('/:groupId/inactive', auth, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { days = 7 } = req.query;
+
+    const group = await Group.findById(groupId).populate('members.user', 'name email');
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found.' });
+    }
+
+    const isMember =
+      group.owner.toString() === req.userId.toString() ||
+      group.members.some((m) => m.user._id.toString() === req.userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+
+    const inactiveMembers = [];
+
+    for (const member of group.members) {
+      const userId = member.user._id;
+
+      const lastMessage = await Message.findOne({
+        group: groupId,
+        sender: userId,
+      }).sort({ createdAt: -1 });
+
+      const lastProgress = await Progress.findOne({
+        group: groupId,
+        user: userId,
+      }).sort({ createdAt: -1 });
+
+      const lastActivityDate = [lastMessage?.createdAt, lastProgress?.createdAt]
+        .filter(Boolean)
+        .sort((a, b) => b - a)[0];
+
+      if (!lastActivityDate || lastActivityDate < cutoffDate) {
+        inactiveMembers.push({
+          user: member.user,
+          role: member.role,
+          lastActive: lastActivityDate || null,
+        });
+      }
+    }
+
+    return res.json({
+      group: group.name,
+      inactiveCount: inactiveMembers.length,
+      inactiveMembers,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 
 module.exports = router;
