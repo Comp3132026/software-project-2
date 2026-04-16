@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const OpenAI = require('openai');
 const Group = require('../models/Group');
 const Task = require('../models/Task');
 const { auth } = require('../middleware/auth');
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let client = null;
+if (process.env.OPENAI_API_KEY) {
+  const OpenAI = require('openai');
+  client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 /* ------------------------------------------
    HELPERS
@@ -42,6 +45,10 @@ function getTaskCounts(tasks) {
 ------------------------------------------- */
 router.post('/suggest-task', auth, async (req, res) => {
   try {
+    if (!client) {
+      return res.status(503).json({ message: 'AI service not configured. Please set OPENAI_API_KEY.' });
+    }
+
     const { title, description, groupName, memberName } = req.body;
 
     const prompt = `
@@ -80,6 +87,10 @@ Return ONLY JSON:
 ------------------------------------------- */
 router.post('/suggest-assignee', auth, async (req, res) => {
   try {
+    if (!client) {
+      return res.status(503).json({ message: 'AI service not configured. Please set OPENAI_API_KEY.' });
+    }
+
     const { groupId, priority } = req.body;
 
     const group = await Group.findById(groupId).populate('members.user', 'name');
@@ -181,6 +192,10 @@ REQUIRED OUTPUT:
 ------------------------------------------- */
 router.post('/suggest-priority', auth, async (req, res) => {
   try {
+    if (!client) {
+      return res.status(503).json({ message: 'AI service not configured. Please set OPENAI_API_KEY.' });
+    }
+
     const { title, description } = req.body;
 
     const prompt = `
