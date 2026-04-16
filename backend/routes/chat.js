@@ -63,10 +63,12 @@ router.post('/', auth, async (req, res) => {
 
     const populated = await Message.findById(message._id).populate('sender', 'name email');
 
-    const io = req.app.get('io');
-    io.to(groupId).emit('new-message', populated);
+   const io = req.app.get('io');
+if (io) {
+  io.to(groupId).emit('new-message', populated);
+}
 
-    res.status(201).json(populated);
+res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
