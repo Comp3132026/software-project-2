@@ -66,8 +66,9 @@ export const tasksAPI = {
 
 export const membersAPI = {
   getByGroup: (groupId) => api.get(`/members/group/${groupId}`),
-  add: (groupId, data) => api.post(`/members/group/${groupId}/add`, data),
+  add: (groupId, data) => api.post(`/members/group/${groupId}`, data),
   updateRole: (groupId, userId, data) => api.put(`/members/group/${groupId}/${userId}/role`, data),
+  suspend: (groupId, userId) => api.put(`/members/group/${groupId}/${userId}/suspend`),
   remove: (groupId, userId) => api.delete(`/members/group/${groupId}/${userId}`),
   search: (q, groupId) => api.get(`/members/search?q=${q}&groupId=${groupId}`),
   flag: (groupId, memberId, data) => api.put(`/members/flag/${groupId}/${memberId}`, data),
