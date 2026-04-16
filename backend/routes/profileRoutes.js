@@ -5,7 +5,7 @@ const { auth } = require('../middleware/auth');
 
 const User = require('../models/User');
 const Group = require('../models/Group');
-const GroupMembership = require('../models/GroupMembership');
+const GroupMembership = require('../models/GroupMembership.js');
 const Task = require('../models/Task');
 
 const router = express.Router();
