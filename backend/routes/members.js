@@ -5,7 +5,7 @@ const { auth } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Fetch members for UI
+// Fetch members and their roles for a group
 router.get("/group/:groupId", auth, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId)
@@ -36,25 +36,30 @@ router.get("/group/:groupId", auth, async (req, res) => {
       joinedAt: m.joinedAt,
     }));
 
-    return res.json(members);
+    return res.json({
+      groupId: group._id,
+      groupName: group.name,
+      members,
+    });
   } catch (error) {
     return res
       .status(500)
       .json({ message: "Server error", error: error.message });
   }
 });
+
 // Fetch a member profile by user ID
-router.get('/:userId', auth, async (req, res) => {
+router.get("/:userId", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select('-password');
+    const user = await User.findById(req.params.userId).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
     return res.json(user);
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
