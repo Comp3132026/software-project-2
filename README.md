@@ -568,7 +568,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 ## 🙏 Acknowledgments
 
 - [React](https://react.dev/) — UI Library
-- [Tailwind CSS](https://tailwindcss.com/) — Styling Framework
+- [Tailwind CSS](https://tailwindcss.com/) — CSS Framework
 - [MongoDB](https://www.mongodb.com/) — Database
 - [Socket.IO](https://socket.io/) — Real-time Engine
 - [OpenAI](https://openai.com/) — AI Integration
@@ -577,7 +577,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 ---
 
 <p align="center">
-  <strong>Built with ❤️ by the LifeSync Team</strong>
+  <strong>Built with ❤️the love of the LifeSync Team</strong>
 </p>
 
 <p align="center">
