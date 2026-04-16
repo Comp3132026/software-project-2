@@ -216,12 +216,12 @@ export default function GroupPage() {
                   <Share2 size={16} /> Share Progress
                 </button>
 
-               <button 
-               OnClick={() => groupActions.setShowLeaveModal(true)}
-               className = "btn-secondary py-2 text-red-600 hover:bg-red-50 hover:border-red-200"
-               >
-                <LogOut size ={16} /> Leave 
-               </button>
+                <button
+                  onClick={() => groupActions.setShowLeaveModal(true)}
+                  className="btn-secondary py-2 text-red-600 hover:bg-red-50 hover:border-red-200"
+                >
+                  <LogOut size={16} /> Leave
+                </button>
               </div>
             </div>
           </div>
@@ -437,7 +437,13 @@ export default function GroupPage() {
           <AnnouncementModal groupId={id} onClose={() => setShowAnnouncement(false)} />
         )}
 
-        
+        {groupActions.showEditGroup && (
+          <GroupForm
+            group={group}
+            onClose={groupActions.handleEditGroupClose}
+            onSuccess={groupActions.handleEditGroupSuccess}
+          />
+        )}
 
         <ConfirmDialog
           isOpen={groupActions.showDeleteConfirm}
@@ -448,20 +454,14 @@ export default function GroupPage() {
           onCancel={() => groupActions.setShowDeleteConfirm(false)}
           danger
         />
+
         {groupActions.showLeaveModal && (
           <LeaveGroupModal
-           group={group}
+            group={group}
             members={members}
             isOwner={roles.isOwner}
             onClose={() => groupActions.setShowLeaveModal(false)}
             onSuccess={() => navigate('/')}
-             />
-        )}
-      {groupActions.showEditGroup && (
-          <GroupForm
-            group={group}
-            onClose={groupActions.handleEditGroupClose}
-            onSuccess={groupActions.handleEditGroupSuccess}
           />
         )}
 
@@ -481,4 +481,3 @@ export default function GroupPage() {
     </GroupProvider>
   );
 }
-
