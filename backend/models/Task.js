@@ -22,13 +22,20 @@ const taskSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
   isHabit: { type: Boolean, default: false },
   frequency: { type: String, enum: ['daily', 'weekly', 'monthly', 'once'], default: 'once' },
+  reminderSet: { type: Boolean, default: false },
+  reminderDate: { type: Date },
+  reminderMessage: { type: String, default: '' },
+  completedBy: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    completedAt: { type: Date, default: Date.now },
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
-taskSchema.pre('save', function () {
+taskSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
-  
+  next();
 });
 
 taskSchema.index({ group: 1, assignedTo: 1 });

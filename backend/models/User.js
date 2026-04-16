@@ -12,13 +12,19 @@ const userSchema = new mongoose.Schema({
     },
   ],
   createdAt: { type: Date, default: Date.now },
+  notificationFrequency: {
+    type: String,
+    enum: ['1h', '6h', '12h', '1d', '3d', '1w'],
+    default: '1h',
+  },
 });
 
-userSchema.pre("save", async function () {
+userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return;
+    return next();
   }
   this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
