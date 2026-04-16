@@ -14,7 +14,6 @@ const chatRoutes = require("./routes/chat");
 const warningRoutes = require("./routes/warnings");
 const profileRoutes = require("./routes/profiles");
 const aiRoutes = require("./routes/ai");
-const progressRoutes = require("./routes/progress");
 
 const app = express();
 const server = http.createServer(app);
@@ -44,7 +43,6 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/warnings", warningRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/progress", progressRoutes);
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
