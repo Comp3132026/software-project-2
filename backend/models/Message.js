@@ -20,8 +20,6 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
-  isEdited: { type: Boolean, default: false },
-  editedAt: { type: Date, default: null },
   pinned: { type: Boolean, default: false },
   warning: {
     reason: { type: String, default: null },
