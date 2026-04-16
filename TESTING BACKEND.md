@@ -576,3 +576,34 @@ Conduct functional testing and document role assignment and permission changes f
 - Non-owner users (moderator/member) are blocked from owner-only actions with `403`.
 - Task assignment endpoint is owner-only and correctly blocks member attempts (`403`).
 - **Observed RBAC mismatch:** a `viewer` can create tasks (`POST /api/tasks` returned `201`), while frontend RBAC matrix indicates viewer should not manage tasks.
+
+
+
+Functional API Testing (Members & Roles)
+Issue
+
+#145 / #147
+
+Feature Tested
+
+Members and roles management endpoints
+
+Endpoints Tested
+Method	Endpoint	Purpose
+GET	/api/members/group/:groupId	Retrieve all group members and their roles
+POST	/api/members/group/:groupId/add	Add a user to a group
+PUT	/api/members/group/:groupId/:userId/role	Update a member’s role
+Preconditions
+Backend server is running
+MongoDB connection is active
+User is authenticated (valid JWT token)
+A group exists
+At least one additional user exists for testing
+
+| # | Scenario            | Expected                   | Actual                | Result |
+| - | ------------------- | -------------------------- | --------------------- | ------ |
+| 1 | Get group members   | Returns members with roles | Returned correct data | ✅      |
+| 2 | Add member to group | Member added successfully  | Member added          | ✅      |
+| 3 | Update member role  | Role updated correctly     | Role updated          | ✅      |
+| 4 | Unauthorized access | 403                        | 403                   | ✅      |
+| 5 | Invalid groupId     | 404                        | 404                   | ✅      |
